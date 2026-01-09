@@ -1,0 +1,144 @@
+name: Build and Publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  VERSION: 1.4.0
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [x64, Win32, ARM64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore NuGet packages
+        run: nuget restore
+      - name: Build native library
+        run: msbuild WebRtcVad/WebRtcVad.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }}
+      - name: Run tests
+        if: matrix.platform == 'x64'
+        run: dotnet test -c Release
+        env:
+          PATH: ${{ github.workspace }}\WebRtcVad\bin\x64\Release;${{ env.PATH }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-${{ matrix.platform == 'Win32' && 'x86' || (matrix.platform == 'ARM64' && 'arm64' || 'x64') }}
+          path: WebRtcVad/bin/${{ matrix.platform }}/Release/WebRtcVad.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            target: lib-linux-x64
+          - arch: arm64
+            target: lib-linux-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install cross-compiler
+        if: matrix.arch == 'arm64'
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build native library
+        run: make -C WebRtcVad clean && make -C WebRtcVad ${{ matrix.target }}
+      - name: Run tests
+        if: matrix.arch == 'x64'
+        run: dotnet test -c Release
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/WebRtcVad/runtimes/linux-x64/native
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.arch }}
+          path: WebRtcVad/runtimes/linux-${{ matrix.arch }}/native/libwebrtcvad.so
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            target: lib-osx-arm64
+          - arch: x64
+            target: lib-osx-x64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build native library
+        run: make -C WebRtcVad clean && make -C WebRtcVad ${{ matrix.target }}
+      - name: Run tests
+        if: matrix.arch == 'arm64'
+        run: dotnet test -c Release
+        env:
+          DYLD_LIBRARY_PATH: ${{ github.workspace }}/WebRtcVad/runtimes/osx-arm64/native
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osx-${{ matrix.arch }}
+          path: WebRtcVad/runtimes/osx-${{ matrix.arch }}/native/libwebrtcvad.dylib
+
+  package:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Prepare native libraries
+        run: |
+          mkdir -p runtimes/win-x64/native runtimes/win-x86/native runtimes/win-arm64/native
+          mkdir -p runtimes/linux-x64/native runtimes/linux-arm64/native
+          mkdir -p runtimes/osx-x64/native runtimes/osx-arm64/native
+          cp artifacts/win-x64/WebRtcVad.dll runtimes/win-x64/native/
+          cp artifacts/win-x86/WebRtcVad.dll runtimes/win-x86/native/
+          cp artifacts/win-arm64/WebRtcVad.dll runtimes/win-arm64/native/
+          cp artifacts/linux-x64/libwebrtcvad.so runtimes/linux-x64/native/
+          cp artifacts/linux-arm64/libwebrtcvad.so runtimes/linux-arm64/native/
+          cp artifacts/osx-x64/libwebrtcvad.dylib runtimes/osx-x64/native/
+          cp artifacts/osx-arm64/libwebrtcvad.dylib runtimes/osx-arm64/native/
+      - name: Build managed library
+        run: dotnet build WebRtcVadSharp/WebRtcVadSharp.csproj -c Release
+      - name: Pack NuGet
+        run: dotnet pack WebRtcVadSharp/WebRtcVadSharp.csproj -c Release -o nupkg
+      - name: Upload NuGet package
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: nupkg/*.nupkg
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-package
+          path: nupkg
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Push to NuGet
+        run: dotnet nuget push nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

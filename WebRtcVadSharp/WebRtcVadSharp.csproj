@@ -2,20 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Authors>Jay Miller</Authors>
+    <PackageId>devnull.WebRtcVadSharp</PackageId>
+    <Authors>Jay Miller, devnull</Authors>
     <Company></Company>
     <Copyright>Copyright (c) 2020 Jay Miller</Copyright>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Description>.NET Standard interface for the WebRTC voice activity detection (VAD) component.</Description>
+    <Description>Fork of WebRtcVadSharp with added support for macOS and ARM64 (Windows/Linux/macOS). Original project: https://github.com/ladenedge/WebRtcVadSharp</Description>
     <PreserveCompilationContext>false</PreserveCompilationContext>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    <Version>1.3.2</Version>
-    <PackageProjectUrl>https://github.com/ladenedge/WebRtcVadSharp</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ladenedge/WebRtcVadSharp.git</RepositoryUrl>
+    <Version>1.4.0</Version>
+    <PackageProjectUrl>https://github.com/devnull/WebRtcVadSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/devnull/WebRtcVadSharp.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>webrtc vad voice detection recognition</PackageTags>
+    <PackageTags>webrtc vad voice detection recognition arm64 macos crossplatform</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
@@ -39,19 +39,9 @@
     <EmbeddedFiles Include="$(GeneratedAssemblyInfoFile)" />
   </ItemGroup>
 
+  <!-- Native library includes for NuGet package -->
   <ItemGroup>
-    <ContentWithTargetPath Condition="'$(OS)'=='Windows_NT'" Include="..\WebRtcVad\bin\x64\$(Configuration)\WebRtcVad.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>WebRtcVad.dll</TargetPath>
-	  <Pack>true</Pack>
-      <PackagePath>runtimes/win-x64/native</PackagePath>
-    </ContentWithTargetPath>
-    <ContentWithTargetPath Condition="'$(OS)'=='Unix'" Include="../WebRtcVad/runtimes/linux-x64/native/libwebrtcvad.so.$(Version)">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>libwebrtcvad.so</TargetPath>
-	  <Pack>true</Pack>
-      <PackagePath>runtimes/linux-x64/native</PackagePath>
-    </ContentWithTargetPath>
+    <None Include="../runtimes/**/*" Pack="true" PackagePath="runtimes" />
   </ItemGroup>
 
   <ItemGroup>

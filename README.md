@@ -11,9 +11,8 @@ threshold model.
 See below for a brief overview, or visit the wiki for more
 [in-depth documentation](../../wiki).
 
-[![Build Status](https://travis-ci.org/ladenedge/WebRtcVadSharp.svg?branch=main)](https://travis-ci.org/ladenedge/WebRtcVadSharp)
-[![Coverage Status](https://coveralls.io/repos/github/ladenedge/WebRtcVadSharp/badge.svg?branch=main)](https://coveralls.io/github/ladenedge/WebRtcVadSharp?branch=main)
-[![NuGet Version](https://img.shields.io/nuget/v/WebRtcVadSharp)](https://www.nuget.org/packages/WebRtcVadSharp)
+[![Build Status](https://github.com/devnull/WebRtcVadSharp/actions/workflows/build.yml/badge.svg)](https://github.com/devnull/WebRtcVadSharp/actions/workflows/build.yml)
+[![NuGet Version](https://img.shields.io/nuget/v/devnull.WebRtcVadSharp)](https://www.nuget.org/packages/devnull.WebRtcVadSharp)
 
 Installation
 --

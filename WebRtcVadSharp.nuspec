@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>WebRtcVadSharp</id>
-    <version>1.3.2</version>
+    <version>1.4.0</version>
     <title>WebRtcVadSharp</title>
     <authors>ladenedge</authors>
     <owners>ladenedge</owners>
@@ -19,8 +19,7 @@
   </metadata>
   <files>
     <file src="WebRtcVadSharp\bin\Release\**" exclude="**\*.json;**\WebRtcVad.*" target="lib" />
-    <file src="WebRtcVad\bin\Win32\Release\WebRtcVad.*" exclude="**\*.i*" target="build\win-x86\native" />
-    <file src="WebRtcVad\bin\x64\Release\WebRtcVad.*" exclude="**\*.i*" target="build\win-x64\native" />
+    <file src="runtimes\**\*" target="runtimes" />
     <file src="WebRtcVadSharp.targets" target="build" />
   </files>
 </package>
